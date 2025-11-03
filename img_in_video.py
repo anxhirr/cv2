@@ -19,11 +19,11 @@ logo = cv2.imread(logo_path, 0)
 logo_mod = cv2.GaussianBlur(logo, (3, 3), 0)
 
 # Pre-compute all resized templates ONCE
-resized_templates = []
+resized_logos = []
 for scale in scales:
     resized = cv2.resize(logo_mod, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
     h, w = resized.shape
-    resized_templates.append((scale, resized, w, h))
+    resized_logos.append((scale, resized, w, h))
 
 # -----------------------------
 # Open video
@@ -42,6 +42,7 @@ match_template_time = 0
 detecting = False
 start_frame = None
 last_best_scale_idx = len(scales) // 2  # Start with middle scale
+best_values_log = []  # Track all best values
 
 # Process only the frames we need
 frames_to_check = range(0, total_frames, frame_skip)
@@ -54,6 +55,7 @@ for frame_num in tqdm(frames_to_check, desc="Frames processed"):
     
     # Convert to grayscale (skip blur unless necessary)
     frame_mod = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    frame_mod = cv2.GaussianBlur(frame_mod, (3, 3), 0)
     
     best_val = 0
     best_scale_idx = last_best_scale_idx
@@ -67,7 +69,7 @@ for frame_num in tqdm(frames_to_check, desc="Frames processed"):
             scale_order.append(last_best_scale_idx - offset)
     
     for idx in scale_order:
-        scale, template, w, h = resized_templates[idx]
+        scale, template, w, h = resized_logos[idx]
         
         if h > frame_mod.shape[0] or w > frame_mod.shape[1]:
             continue
@@ -87,6 +89,7 @@ for frame_num in tqdm(frames_to_check, desc="Frames processed"):
             break
     
     last_best_scale_idx = best_scale_idx
+    best_values_log.append((frame_num, best_val))
     
     # Detection tracking
     if best_val >= threshold:
@@ -121,6 +124,29 @@ if detections:
         print(f"{idx}. Logo detected from {start:.2f}s to {end:.2f}s ({dur:.2f} seconds)")
 else:
     print("No detections found.")
+
+# Print best value statistics
+print("\n📊 Best Match Value Statistics:")
+if best_values_log:
+    best_vals = [val for _, val in best_values_log]
+    max_val = max(best_vals)
+    min_val = min(best_vals)
+    avg_val = np.mean(best_vals)
+    
+    print(f"Maximum match value: {max_val:.4f}")
+    print(f"Minimum match value: {min_val:.4f}")
+    print(f"Average match value: {avg_val:.4f}")
+    print(f"Current threshold: {threshold}")
+    
+    # Show frame with best match
+    best_frame_num, best_frame_val = max(best_values_log, key=lambda x: x[1])
+    print(f"\n🎯 Best match found at frame {best_frame_num} ({best_frame_num/fps:.2f}s) with value: {best_frame_val:.4f}")
+    
+    # Show top 5 matches
+    sorted_vals = sorted(best_values_log, key=lambda x: x[1], reverse=True)
+    print("\nTop 5 matches:")
+    for i, (frame, val) in enumerate(sorted_vals[:5], 1):
+        print(f"  {i}. Frame {frame} ({frame/fps:.2f}s): {val:.4f}")
 
 total_processed = len(frames_to_check)
 print(f"\nmatchTemplate time: {match_template_time:.2f}s ({match_template_time/total_processed*1000:.2f}ms per frame)")
