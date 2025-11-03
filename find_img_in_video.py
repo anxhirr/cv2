@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # Load template image
-logo = cv2.imread("logo2.PNG", 0)
+logo = cv2.imread("logo.PNG", 0)
 logo_mod = cv2.GaussianBlur(logo, (3, 3), 0)
 
 # Open video file
@@ -30,7 +30,7 @@ match_count = 0
 print(f"Processing video: {video_path}")
 print(f"Total frames: {total_frames}")
 print(f"Video size: {width}x{height}, FPS: {fps}")
-print(f"Template image: logo2.PNG")
+print(f"Template image: logo.PNG")
 print(f"Threshold: {threshold}\n")
 
 while True:

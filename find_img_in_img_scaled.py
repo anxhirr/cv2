@@ -5,7 +5,7 @@ import numpy as np
 source = cv2.imread("source.png")
 source_mod = cv2.GaussianBlur(cv2.cvtColor(source, cv2.COLOR_BGR2GRAY), (3, 3), 0)
 
-logo = cv2.imread("logo5.png", 0)
+logo = cv2.imread("logo.png", 0)
 logo_mod = cv2.GaussianBlur(logo, (3, 3), 0)
 
 # Define scale range and threshold

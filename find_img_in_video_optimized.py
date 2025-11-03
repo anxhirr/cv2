@@ -6,11 +6,11 @@ from tqdm import tqdm
 # User settings
 # -----------------------------
 video_path = "source.mp4"
-logo_path = "logo6.PNG"
+logo_path = "logo.PNG"
 output_path = "result_video.mp4"
 threshold = 0.8
-scales = np.linspace(0.5, 1.3, 25)  # 25 scales from 50% to 130%
-frame_skip = 1  # process every 'frame_skip' frame (1 = every frame)
+scales = np.linspace(0.5, 1.5, 20)  # 20 scales from 50% to 150%
+frame_skip = 10  # process every 'frame_skip' frame (1 = every frame)
 
 # Optional: restrict search to a region (y1:y2, x1:x2)
 # Set to None to search full frame
