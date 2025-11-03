@@ -21,7 +21,7 @@ fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
 # Define scale range and threshold
-scales = np.logspace(np.log10(0.5), np.log10(1.5), 10)  # 10 scales from 50% to 150%
+scales = np.logspace(np.log10(0.5), np.log10(1.5), 20)  # 20 scales from 50% to 150%
 threshold = 0.8
 
 frame_count = 0

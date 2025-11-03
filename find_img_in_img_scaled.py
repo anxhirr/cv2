@@ -9,7 +9,7 @@ logo = cv2.imread("logo.png", 0)
 logo_mod = cv2.GaussianBlur(logo, (3, 3), 0)
 
 # Define scale range and threshold
-scales = np.logspace(np.log10(0.5), np.log10(1.5), 10)  # 10 scales from 50% to 150%
+scales = np.logspace(np.log10(0.5), np.log10(1.5), 20)  # 20 scales from 50% to 150%
 threshold = 0.8
 
 best_val = 0

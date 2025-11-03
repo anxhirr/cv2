@@ -1,14 +1,15 @@
 import cv2
 import numpy as np
 from tqdm import tqdm
+import time
 
 # -----------------------------
 # User settings
 # -----------------------------
 video_path = "source.mp4"
-logo_path = "logo.PNG"
+logo_path = "logo7.PNG"
 threshold = 0.8
-scales = np.logspace(np.log10(0.5), np.log10(1.5), 10)  # 10 scales from 50% to 150%
+scales = np.logspace(np.log10(0.5), np.log10(1.5), 20)  # 20 scales from 50% to 150%
 frame_skip = 10  # check every frame for accurate timing
 search_region = None  # (y1, y2, x1, x2) or None
 
@@ -37,6 +38,7 @@ print(f"Threshold: {threshold}, Scales: {len(scales)}, Frame skip: {frame_skip}\
 
 frame_count = 0
 detections = []
+match_template_time = 0
 
 # Track ongoing detection
 detecting = False
@@ -67,7 +69,9 @@ for _ in tqdm(range(total_frames), desc="Frames processed"):
     for scale, template, w, h in resized_templates:
         if h > frame_mod.shape[0] or w > frame_mod.shape[1]:
             continue
+        start_time = time.perf_counter()
         result = cv2.matchTemplate(frame_mod, template, cv2.TM_CCOEFF_NORMED)
+        match_template_time += time.perf_counter() - start_time
         _, max_val, _, _ = cv2.minMaxLoc(result)
         if max_val > best_val:
             best_val = max_val
@@ -110,3 +114,4 @@ if detections:
         print(f"{idx}. Logo detected from {start:.2f}s to {end:.2f}s ({dur:.2f} seconds)")
 else:
     print("No detections found.")
+print(f"\nmatchTemplate time: {match_template_time:.2f}s ({match_template_time/frame_count*1000:.2f}ms per frame)")
