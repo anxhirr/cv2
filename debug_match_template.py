@@ -26,11 +26,11 @@ logo = cv2.imread(logo_path, cv2.IMREAD_GRAYSCALE)
 logo_mod = cv2.GaussianBlur(logo, (3, 3), 0)
 
 # Precompute all resized templates
-resized_templates = []
+resized_logos = []
 for scale in scales:
     resized = cv2.resize(logo_mod, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
     h, w = resized.shape
-    resized_templates.append((scale, resized, w, h))
+    resized_logos.append((scale, resized, w, h))
 
 # -----------------------------
 # Open video
@@ -77,7 +77,7 @@ for frame_num in tqdm(frames_to_check, desc="Frames processed"):
     # Try all scales
     # -----------------------------
     for idx in scale_order:
-        scale, template, w, h = resized_templates[idx]
+        scale, template, w, h = resized_logos[idx]
         if h > gray.shape[0] or w > gray.shape[1]:
             continue
 
@@ -114,7 +114,7 @@ for frame_num in tqdm(frames_to_check, desc="Frames processed"):
     # -----------------------------
     # Save debug frames (all of them)
     # -----------------------------
-    scale, template, w, h = resized_templates[best_scale_idx]
+    scale, template, w, h = resized_logos[best_scale_idx]
     top_left = best_loc
     bottom_right = (top_left[0] + w, top_left[1] + h)
 
