@@ -12,10 +12,6 @@ threshold = 0.8
 scales = np.logspace(np.log10(0.5), np.log10(1.5), 20)  # 20 scales from 50% to 150%
 frame_skip = 10  # process every 'frame_skip' frame (1 = every frame)
 
-# Optional: restrict search to a region (y1:y2, x1:x2)
-# Set to None to search full frame
-search_region = None  # e.g., (0, 100, -200, None)  # top-right corner
-
 # -----------------------------
 # Load template and preprocess
 # -----------------------------
@@ -62,14 +58,7 @@ for _ in tqdm(range(total_frames), desc="Frames processed"):
         frame_count += 1
         continue
 
-    frame_gray = cv2.GaussianBlur(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (3, 3), 0)
-
-    # Apply search region if defined
-    if search_region:
-        y1, y2, x1, x2 = search_region
-        frame_mod = frame_gray[y1:y2, x1:x2]
-    else:
-        frame_mod = frame_gray
+    frame_mod = cv2.GaussianBlur(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (3, 3), 0)
 
     best_val = 0
     best_loc = None
@@ -95,12 +84,6 @@ for _ in tqdm(range(total_frames), desc="Frames processed"):
         match_count += 1
         top_left = best_loc
         bottom_right = (top_left[0] + best_w, top_left[1] + best_h)
-
-        # Adjust if using a search region
-        if search_region:
-            top_left = (top_left[0] + (x1 if x1 else 0), top_left[1] + (y1 if y1 else 0))
-            bottom_right = (bottom_right[0] + (x1 if x1 else 0), bottom_right[1] + (y1 if y1 else 0))
-
         cv2.rectangle(frame, top_left, bottom_right, (0, 0, 255), 2)
 
     out.write(frame)
