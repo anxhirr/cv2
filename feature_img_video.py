@@ -1,14 +1,7 @@
-"""
-Precise feature matching example:
- - SIFT feature detection + descriptors
- - FLANN KNN matching
- - Lowe's ratio test
- - Symmetric (mutual) check
- - RANSAC homography to remove outliers
-
-Usage:
-    python feature_img_img.py
-"""
+#!/usr/bin/env python3
+from cv2.typing import MatLike
+import cv2, numpy as np, matplotlib.pyplot as plt
+from typing import List, Sequence
 
 import cv2
 from cv2.typing import MatLike
@@ -16,17 +9,13 @@ import numpy as np
 from typing import List, Sequence
 from matplotlib import pyplot
 
-RATIO = 0.7
-MIN_MATCH_COUNT = 5
-
-img1 = cv2.imread("source.png", cv2.IMREAD_GRAYSCALE)
-img2 = cv2.imread("logo14.png", cv2.IMREAD_GRAYSCALE)
+# ------------------- MATCHING CORE -------------------
+RATIO, MIN_MATCH_COUNT = 0.7, 5
 
 def detect_and_compute(img: MatLike):
     sift = cv2.SIFT_create()
     kps, desc = sift.detectAndCompute(img, None)
     return kps, desc
-
 def flann_knn_match(desc1: MatLike, desc2: MatLike):
     FLANN_INDEX_KDTREE = 1
     index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
@@ -63,38 +52,36 @@ def filter_with_ransac(kps1, kps2, matches):
     mask = mask.ravel().tolist()
     return matches, H, mask
 
-def draw_matches(kps1, kps2, matches):
-    out = cv2.drawMatches(img1, kps1, img2, kps2, matches, None)
-    pyplot.imshow(out)
-    pyplot.show()
+def draw_matches(i1,k1,i2,k2,ms,t):
+    out = cv2.drawMatches(i1,k1,i2,k2,ms,None,matchColor=(0,255,0),flags=2)
+    plt.figure(figsize=(14,7)); plt.title(t); plt.imshow(cv2.cvtColor(out,cv2.COLOR_BGR2RGB)); plt.show()
 
+# ----------------------------------------------------
 
-def match_images():
-    kps1, desc1 = detect_and_compute(img1)
-    kps2, desc2 = detect_and_compute(img2)
-
-    # 1) KNN matches 1->2 and 2->1
-    knn12 = flann_knn_match(desc1, desc2)
-    knn21 = flann_knn_match(desc2, desc1)
-
-    # 2) Lowe ratio test in both directions
-    good12 = lowe_ratio_filter(knn12)
-    good21 = lowe_ratio_filter(knn21)
-
-    # 3) Symmetric mutual check (keeps only mutual matches)
-    mutual = symmetric_check(good12, good21)
-
-    # 4) RANSAC homography filtering to remove geometric outliers
-    matches, H, mask = filter_with_ransac(kps1, kps2, mutual)
-
-    return matches, H, mask, kps1, kps2
-
-def main():
-    matches, H, mask, kps1, kps2 = match_images()
-    print(f"Final matches: {len(matches)}")
-
-    if len(matches) > 0:
-        draw_matches(kps1, kps2, matches)
+def video_generator(path):
+    cap = cv2.VideoCapture(path)
+    idx = 0
+    while True:
+        ret, bgr = cap.read()
+        if not ret: break
+        gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+        yield idx, gray, bgr
+        idx += 1
+    cap.release()
 
 if __name__ == "__main__":
-    main()
+    logo = cv2.imread("logo2.png", cv2.IMREAD_GRAYSCALE)
+    kps_l, desc_l = detect_and_compute(logo)
+
+    for idx, gray, bgr in video_generator("source.mp4"):
+        kps_f, desc_f = detect_and_compute(gray)
+
+        good12 = lowe_ratio_filter(flann_knn_match(desc_l, desc_f))
+        good21 = lowe_ratio_filter(flann_knn_match(desc_f, desc_l))
+        mutual = symmetric_check(good12, good21)
+        final, H, _ = filter_with_ransac(kps_l, kps_f, mutual)
+
+        print(f"Frame {idx:04d} → {len(final)} inliers")
+        if len(final) >= MIN_MATCH_COUNT:
+            draw_matches(cv2.cvtColor(logo,cv2.COLOR_GRAY2BGR), kps_l, bgr, kps_f, final,
+                         f"Frame {idx} – {len(final)} matches")
