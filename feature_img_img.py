@@ -17,7 +17,7 @@ from typing import List, Sequence
 from matplotlib import pyplot
 
 RATIO = 0.7
-MIN_MATCH_COUNT = 5
+MIN_MATCH_COUNT = 10
 
 img1 = cv2.imread("source.png", cv2.IMREAD_GRAYSCALE)
 img2 = cv2.imread("logo2.png", cv2.IMREAD_GRAYSCALE)

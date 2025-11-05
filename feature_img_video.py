@@ -2,6 +2,7 @@
 from cv2.typing import MatLike
 import cv2, numpy as np, matplotlib.pyplot as plt
 from typing import List, Sequence
+import os
 
 import cv2
 from cv2.typing import MatLike
@@ -11,7 +12,7 @@ from matplotlib import pyplot
 
 # ------------------- MATCHING CORE -------------------
 RATIO = 0.7 
-MIN_MATCH_COUNT = 5
+MIN_MATCH_COUNT = 10
 
 def detect_and_compute(img: MatLike):
     sift = cv2.SIFT_create()
@@ -74,17 +75,27 @@ def video_generator(path):
 
 if __name__ == "__main__":
     logo = cv2.imread("logo2.png", cv2.IMREAD_GRAYSCALE)
-    kps_l, desc_l = detect_and_compute(logo)
+    kps1, desc1 = detect_and_compute(logo)
 
     for idx, gray, bgr in video_generator("source.mp4"):
-        kps_f, desc_f = detect_and_compute(gray)
+        kps2, desc2 = detect_and_compute(gray)
 
-        good12 = lowe_ratio_filter(flann_knn_match(desc_l, desc_f))
-        good21 = lowe_ratio_filter(flann_knn_match(desc_f, desc_l))
+        # 1) KNN matches 1->2 and 2->1
+        knn12 = flann_knn_match(desc1, desc2)
+        knn21 = flann_knn_match(desc2, desc1)
+
+        # 2) Lowe ratio test in both directions   
+        good12 = lowe_ratio_filter(knn12)
+        good21 = lowe_ratio_filter(knn21)
+
+        # 3) Symmetric mutual check (keeps only mutual matches)
         mutual = symmetric_check(good12, good21)
-        final, H, _ = filter_with_ransac(kps_l, kps_f, mutual)
 
-        print(f"Frame {idx:04d} → {len(final)} inliers")
-        if len(final) >= MIN_MATCH_COUNT:
-            draw_matches(cv2.cvtColor(logo,cv2.COLOR_GRAY2BGR), kps_l, bgr, kps_f, final,
-                         f"Frame {idx} – {len(final)} matches")
+        # 4) RANSAC homography filtering to remove geometric outliers
+        matches, H, _ = filter_with_ransac(kps1, kps2, mutual)
+
+        print(f"Frame {idx:04d} → {len(matches)} matches")
+
+        if len(matches) >= MIN_MATCH_COUNT:
+            draw_matches(cv2.cvtColor(logo,cv2.COLOR_GRAY2BGR), kps1, bgr, kps2, matches,
+                         f"Frame {idx} – {len(matches)} matches")
