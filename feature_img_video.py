@@ -10,12 +10,14 @@ from typing import List, Sequence
 from matplotlib import pyplot
 
 # ------------------- MATCHING CORE -------------------
-RATIO, MIN_MATCH_COUNT = 0.7, 5
+RATIO = 0.7 
+MIN_MATCH_COUNT = 5
 
 def detect_and_compute(img: MatLike):
     sift = cv2.SIFT_create()
     kps, desc = sift.detectAndCompute(img, None)
     return kps, desc
+
 def flann_knn_match(desc1: MatLike, desc2: MatLike):
     FLANN_INDEX_KDTREE = 1
     index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
@@ -54,7 +56,8 @@ def filter_with_ransac(kps1, kps2, matches):
 
 def draw_matches(i1,k1,i2,k2,ms,t):
     out = cv2.drawMatches(i1,k1,i2,k2,ms,None,matchColor=(0,255,0),flags=2)
-    plt.figure(figsize=(14,7)); plt.title(t); plt.imshow(cv2.cvtColor(out,cv2.COLOR_BGR2RGB)); plt.show()
+    plt.figure(figsize=(14,7)); plt.title(t); plt.imshow(cv2.cvtColor(out,cv2.COLOR_BGR2RGB))
+    plt.show()
 
 # ----------------------------------------------------
 

@@ -20,7 +20,7 @@ RATIO = 0.7
 MIN_MATCH_COUNT = 5
 
 img1 = cv2.imread("source.png", cv2.IMREAD_GRAYSCALE)
-img2 = cv2.imread("logo14.png", cv2.IMREAD_GRAYSCALE)
+img2 = cv2.imread("logo2.png", cv2.IMREAD_GRAYSCALE)
 
 def detect_and_compute(img: MatLike):
     sift = cv2.SIFT_create()
