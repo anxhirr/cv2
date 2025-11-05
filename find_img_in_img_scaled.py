@@ -2,14 +2,14 @@ import cv2
 import numpy as np
 
 # Load images
-source = cv2.imread("source.png")
-source_mod = cv2.GaussianBlur(cv2.cvtColor(source, cv2.COLOR_BGR2GRAY), (3, 3), 0)
+source = cv2.imread("source.png", cv2.IMREAD_GRAYSCALE)
+source = cv2.GaussianBlur(source, (3, 3), 0)
 
-logo = cv2.imread("logo.png", 0)
-logo_mod = cv2.GaussianBlur(logo, (3, 3), 0)
+logo = cv2.imread("logo2.png",  cv2.IMREAD_GRAYSCALE)
+logo = cv2.GaussianBlur(logo, (3, 3), 0)
 
 # Define scale range and threshold
-scales = np.logspace(np.log10(0.5), np.log10(1.5), 20)  # 20 scales from 50% to 150%
+scales = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
 threshold = 0.8
 
 best_val = 0
@@ -18,14 +18,14 @@ best_w, best_h = None, None
 best_scale = None
 
 for scale in scales:
-    resized = cv2.resize(logo_mod, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+    resized = cv2.resize(logo, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
     h, w = resized.shape
 
     # Skip if template larger than source
-    if h > source_mod.shape[0] or w > source_mod.shape[1]:
+    if h > source.shape[0] or w > source.shape[1]:
         continue
 
-    result = cv2.matchTemplate(source_mod, resized, cv2.TM_CCOEFF_NORMED)
+    result = cv2.matchTemplate(source, resized, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
 
     print(f"Scale {scale:.2f}: Max confidence = {max_val:.4f}")
