@@ -2,12 +2,8 @@
 from cv2.typing import MatLike
 import cv2, numpy as np, matplotlib.pyplot as plt
 from typing import List, Sequence
-import os
-
-import cv2
-from cv2.typing import MatLike
-import numpy as np
-from typing import List, Sequence
+import os, subprocess
+from pathlib import Path
 from matplotlib import pyplot
 
 # ------------------- MATCHING CORE -------------------
@@ -62,22 +58,48 @@ def draw_matches(i1,k1,i2,k2,ms,t):
 
 # ----------------------------------------------------
 
-def video_generator(path):
-    cap = cv2.VideoCapture(path)
-    idx = 0
-    while True:
-        ret, bgr = cap.read()
-        if not ret: break
-        gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-        yield idx, gray, bgr
-        idx += 1
-    cap.release()
+def extract_frames_ffmpeg(video_path: str, output_dir: str):
+    """
+    Extract all frames from a video as grayscale PNGs using FFmpeg.
+    Equivalent to IMREAD_GRAYSCALE for every frame.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    cmd = [
+        "ffmpeg",
+        "-i", video_path,
+        "-vf", "format=gray",           # force grayscale frames
+        f"{output_dir}/frame_%05d.png"  # numbered frames
+    ]
+    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+
+def video_generator_from_folder(folder: str):
+    """
+    Generator that yields frames (as grayscale) in order from a folder.
+    """
+    files = sorted(Path(folder).glob("frame_*.png"))
+    for idx, path in enumerate(files):
+        gray = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+        yield idx, gray, None  # consistent with previous structure
+
+# ----------------------------------------------------
 
 if __name__ == "__main__":
+    video_path = "source.mp4"
+    frames_dir = "frames_gray"
+
+    # 1) Extract frames once using FFmpeg (grayscale)
+    if not os.path.exists(frames_dir) or len(os.listdir(frames_dir)) == 0:
+        print(f"[FFmpeg] Extracting frames from {video_path} → {frames_dir}/")
+        extract_frames_ffmpeg(video_path, frames_dir)
+    else:
+        print(f"[Info] Using existing extracted frames from {frames_dir}/")
+
+    # 2) Load logo
     logo = cv2.imread("logo2.png", cv2.IMREAD_GRAYSCALE)
     kps1, desc1 = detect_and_compute(logo)
 
-    for idx, gray, bgr in video_generator("source.mp4"):
+    # 3) Process frames
+    for idx, gray, _ in video_generator_from_folder(frames_dir):
         kps2, desc2 = detect_and_compute(gray)
 
         # 1) KNN matches 1->2 and 2->1
@@ -97,5 +119,11 @@ if __name__ == "__main__":
         print(f"Frame {idx:04d} → {len(matches)} matches")
 
         if len(matches) >= MIN_MATCH_COUNT:
-            draw_matches(cv2.cvtColor(logo,cv2.COLOR_GRAY2BGR), kps1, bgr, kps2, matches,
-                         f"Frame {idx} – {len(matches)} matches")
+            draw_matches(
+                cv2.cvtColor(logo, cv2.COLOR_GRAY2BGR),
+                kps1,
+                cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR),
+                kps2,
+                matches,
+                f"Frame {idx} – {len(matches)} matches"
+            )
